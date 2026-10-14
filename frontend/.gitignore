@@ -1,0 +1,22 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# Node.js
+node_modules/
+.next/
+out/
+dist/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Logs and generated data
+*.log
+uploads/
+data/
