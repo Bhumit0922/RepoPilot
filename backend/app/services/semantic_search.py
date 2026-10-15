@@ -38,8 +38,7 @@ def semantic_search(
         JOIN repositories AS r
             ON rf.repository_id = r.id
         WHERE r.id = :repository_id
-          AND cc.embedding IS NOT NULL
-          AND 1 - (cc.embedding <=> CAST(:embedding AS vector)) >= 0.35   
+          AND cc.embedding IS NOT NULL  
         ORDER BY cc.embedding <=> CAST(:embedding AS vector)
         LIMIT :limit
     """)

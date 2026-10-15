@@ -1,0 +1,67 @@
+
+[
+  {
+    "query": "create_app",
+    "expected_paths": [
+      "examples/tutorial/flaskr/__init__.py",
+      "tests/test_apps/cliapp/factory.py",
+      "examples/celery/src/task_app/__init__.py"
+    ]
+  },
+  {
+    "query": "connect to database",
+    "expected_paths": [
+      "examples/tutorial/flaskr/db.py"
+    ]
+  },
+  {
+    "query": "initialize application",
+    "expected_paths": [
+      "examples/tutorial/flaskr/__init__.py"
+    ]
+  },
+  {
+    "query": "close database connection",
+    "expected_paths": [
+      "examples/tutorial/flaskr/db.py"
+    ]
+  },
+  {
+    "query": "register application routes",
+    "expected_paths": [
+      "examples/tutorial/flaskr/__init__.py"
+    ]
+  },
+  {
+    "query": "handle HTTP request",
+    "expected_paths": [
+      "src/flask/app.py"
+    ]
+  },
+  {
+    "query": "handle application errors",
+    "expected_paths": [
+      "src/flask/sansio/app.py"
+    ]
+  },
+  {
+    "query": "load configuration",
+    "expected_paths": [
+      "examples/tutorial/flaskr/__init__.py"
+    ]
+  },
+  {
+    "query": "register blueprint",
+    "expected_paths": [
+      "examples/tutorial/flaskr/__init__.py",
+      "src/flask/sansio/blueprints.py"
+    ]
+  },
+  {
+    "query": "run database initialization command",
+    "expected_paths": [
+      "examples/tutorial/flaskr/db.py"
+    ]
+  }
+]
+

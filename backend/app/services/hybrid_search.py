@@ -27,7 +27,7 @@ def hybrid_search(
     combined = {}
     rrf_k = 60
 
-    # Combine rankings using Reciprocal Rank Fusion.
+    # Combine keyword and semantic rankings.
     for source, results in (
         ("keyword", keyword_results),
         ("semantic", semantic_results),
@@ -45,8 +45,6 @@ def hybrid_search(
 
             item = combined[chunk_id]
 
-            # Keep the keyword result's relevance score and the
-            # semantic result's similarity score when available.
             for key, value in result.items():
                 if key not in {
                     "keyword_rank",
@@ -57,27 +55,30 @@ def hybrid_search(
                         item[key] = value
 
             item[f"{source}_rank"] = rank
-            item["hybrid_score"] += 1.0 / (rrf_k + rank)
+
+            # Keyword matches receive more weight than semantic matches.
+            weight = 1.0 if source == "keyword" else 0.7
+            item["hybrid_score"] += weight / (rrf_k + rank)
 
     query_lower = query.lower()
     identifier_query = re.fullmatch(r"[A-Za-z_]\w*", query)
 
-    # Add code-specific relevance signals.
     for item in combined.values():
-        content = item.get("content", "")
-        content_lower = content.lower()
+        content_lower = item.get("content", "").lower()
         path_lower = item.get("path", "").lower()
 
+        similarity = item.get("similarity_score")
+
+        # Additional code-aware ranking for identifier searches.
         if identifier_query:
-            # Match a complete identifier, not a partial word.
             pattern = r"(?<!\w)" + re.escape(query_lower) + r"(?!\w)"
 
             if re.search(pattern, content_lower):
                 item["hybrid_score"] += 0.03
 
-            # Prefer an actual function definition.
             definition_patterns = [
                 rf"\bdef\s+{re.escape(query_lower)}\s*\(",
+                rf"\basync\s+def\s+{re.escape(query_lower)}\s*\(",
                 rf"\bfunction\s+{re.escape(query_lower)}\s*\(",
                 rf"\b{re.escape(query_lower)}\s*=\s*function\b",
                 rf"\b{re.escape(query_lower)}\s*=\s*\(",
@@ -88,24 +89,36 @@ def hybrid_search(
             ):
                 item["hybrid_score"] += 0.04
 
-        # A matching file path is useful, but weaker than a code match.
+            # Penalize semantic-only results missing the identifier.
+            if item["keyword_rank"] is None and not re.search(
+                pattern, content_lower + " " + path_lower
+            ):
+                item["hybrid_score"] *= 0.5
+
+        # Small bonus when the query appears in the file path.
         if query_lower in path_lower:
             item["hybrid_score"] += 0.005
 
-        # Down-rank semantic-only results for exact identifier queries
-        # when the identifier is absent from their content and path.
-        if (
-            identifier_query
-            and item["keyword_rank"] is None
-            and not re.search(
-                r"(?<!\w)" + re.escape(query_lower) + r"(?!\w)",
-                content_lower + " " + path_lower,
-            )
-        ):
-            item["hybrid_score"] *= 0.8
-
-    return sorted(
+    ranked_results = sorted(
         combined.values(),
         key=lambda item: item["hybrid_score"],
         reverse=True,
-    )[:limit]
+    )
+
+    # Keep only the highest-ranked chunk from each file.
+    unique_results = []
+    seen_paths = set()
+
+    for item in ranked_results:
+        path = item.get("path")
+
+        if path in seen_paths:
+            continue
+
+        seen_paths.add(path)
+        unique_results.append(item)
+
+        if len(unique_results) >= limit:
+            break
+
+    return unique_results
